@@ -43,8 +43,12 @@ intraparticle_void_fraction = 0.39
 intrinsic_rate_coeff = 1.1e-5 #M-1s-1
 x_A = 0.7 #conversion of toluene
 Sb = 1.0055
-
+gas_constant = 8.314 #J/k/mol
+Temp = 333 #K
 #================================================≠#
+print("Concentration of Toluene Feed = ",Concentration_from_MassComp(MW_Toluene,Mass_Fraction_Toluene_Feed,Density_Toluene_Feed))
+print("Concentration of HNO3 Feed = ",Concentration_from_MassComp(MW_NA,Mass_Fraction_NA_Aqueous_Feed,Density_Aqueous_Feed))
+
 Area_tube = Area_Circle(D_tube);Combined_Area = Area_tube*Number_tubes
 
 v_total_hour,v_frac_organic,v_frac_aq,flow_density, flow_viscosity = Vol_Flow_proportions(Mass_Toluene_Feed,Density_Toluene_Feed,Mass_Aqueous_Feed,Density_Aqueous_Feed,Viscosity_Toluene,Viscosity_Aq) #m3/hr
@@ -60,7 +64,8 @@ k_toluene = MT_coeff_Surface_film_from_Sh(Sh,Diffusivity_Toluene_in_Water,d_cata
 #Add new diffusion coeff eqn
 D_ea = Get_Effective_Diffusion_constant(intraparticle_void_fraction,Diffusivity_Toluene_in_Water,tortuosity_particle)
 Bi = Biot_number(k_toluene,d_catalyst/2,D_ea)
-TM = Thiele_Modulus(d_catalyst,intrinsic_rate_coeff,D_ea)
+D_p_corrected = Diffusion_coeff_pore(d_pore,gas_constant,Temp,MW_Toluene)
+TM = Thiele_Modulus(d_catalyst,intrinsic_rate_coeff,D_p_corrected)
 
 effectiveness_factor,global_effectiveness_factor = Global_effectiveness_factor(TM,Bi)
 
