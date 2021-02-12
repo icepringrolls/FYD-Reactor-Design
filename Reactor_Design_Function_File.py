@@ -7,7 +7,6 @@ Created on Thu Feb 11 11:32:46 2021
 """
 def Concentration_from_MassComp(Molar_Mass,Mass_Fraction,Mass_Density):
     Concentration = Mass_Fraction*(Mass_Density/Molar_Mass)
-    print(Concentration)
     return Concentration
 
 def Get_Molar_Flowrate(Mass_Flowrate,molar_weight):
@@ -119,3 +118,9 @@ def get_global_effectiveness_factor(effectiveness_factor, thiele_modulus, kmc, p
     biot_number = kmc*particle_radius/D_ea
     global_effectiveness_factor = 1/(1/effectiveness_factor + thiele_modulus**2/biot_number)
     return global_effectiveness_factor
+
+def Diffusion_coeff_pore(d_pore,gas_constant,temperature,Toluene_MolarMass):
+    import math
+    D_p = (d_pore/3) * math.sqrt(8*gas_constant * temperature/(math.pi * Toluene_MolarMass))
+    D_p_corrected = D_p / 20           #knudesen overestimated diffusion by a factor of 20 https://www.osti.gov/servlets/purl/1424576
+    return D_p_corrected
