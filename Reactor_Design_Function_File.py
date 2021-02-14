@@ -36,7 +36,7 @@ def Reynolds_Assumption_Check(Re):
         print("J-Factor Reynolds Limits Satisified")
         Re_Check =1 
     else:
-        print("J-Factor Reynolds Limits NOT Satisified")
+        print("*****J-Factor Reynolds Limits NOT Satisified *****")
         Re_Check = 0
     return Re_Check
   

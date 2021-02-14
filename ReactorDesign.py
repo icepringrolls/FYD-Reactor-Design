@@ -20,19 +20,19 @@ Density_Toluene_Feed = 867 #kg/m3
 Viscosity_Toluene = 0.56*10**(-3)
 #--------------------------------#
 #Aqueous Feed Composition:
-Mass_Aqueous_Feed = 500 #kg/h
+Mass_Aqueous_Feed = 700 #kg/h
 Mass_Fraction_NA_Aqueous_Feed = 0.7 #kg/h - Remainder = Water
 Density_Aqueous_Feed = 1420 #kg/m3
 Viscosity_Aq = 8.9*10**(-4)
 #===============================#
 MW_Toluene = 92.14 #g/mol or kg/kmol
 MW_NA = 63.01 #g/mol or kg/kmol
+MW_H20 = 18.02 #g/mol
 #---------------------------------#
 d_catalyst = 0.003 #m
 D_tube_minimum = 8*d_catalyst
 D_tube = D_tube_minimum*1.25
-Number_tubes = 50 #number of tubes in bundle
-Initial_volume = 0.007885 #m3
+Number_tubes = 100 #number of tubes in bundle
 Initial_Voidage = 0.3 #30% free space
 Voidage = Initial_Voidage
 Diffusivity_Toluene_in_Water = 8.6*10**(-12)
@@ -42,7 +42,12 @@ tortuosity_particle = 1.3  #https://www.sciencedirect.com/science/article/pii/S0
 intraparticle_void_fraction = 0.39
 intrinsic_rate_coeff = 1.1e-5 #M-1s-1
 x_A = 0.7 #conversion of toluene
-Sb = 1.0055
+Sb = 1.0055 #Stoich Coeff Nitric Acid
+S_c = 0.6535 #Stoich Coeff 2-Nitrotoluene
+S_d = 0.0454 #Stoich Coeff 3-Nitrotoluene
+S_e = 0.2956 #Stoich Coeff 4-Nitrotoluene
+S_f = 0.0055 #Stoich Coeff Dinitrotoluene
+S_g = 1.0055 #Stoich Coeff Water
 gas_constant = 8.314 #J/k/mol
 Temp = 333 #K
 Heat_Reaction_1 = -129000 #J/mol
@@ -62,11 +67,11 @@ print("Relative driving diffusion driving force across organic-aqueous phase (mo
 print("------------------------------------------------------------")
 
 #Assess individual tube diameter and area + Combined:
-Area_tube = Area_Circle(D_tube);Combined_Area = Area_tube*Number_tubes 
+Area_tube = Area_Circle(D_tube);Combined_Area = Area_tube*Number_tubes; equiv_diameter = math.sqrt(4*Combined_Area/math.pi)
 print("Diameter of a tube (m) = ", D_tube); print("Minimum diameter of a tube (m) = ", D_tube_minimum)
 if D_tube >= D_tube_minimum: print("Minimum tube diameter SATISFIED")
-else: print("Minimum tube diameter INVALID");
-print("Tube Inner Cross-sectional area (m2) = ",Area_tube);print("Total Reactor Cross-sectional area (m2) = ",Combined_Area)
+else: print("***** Minimum tube diameter INVALID *****");
+print("Tube Inner Cross-sectional area (m2) = ",Area_tube);print("Total Reactor Cross-sectional area (m2) = ",Combined_Area); print("Equivalent Internal Diameter (m) = ",equiv_diameter)
 print("------------------------------------------------------------")
 
 #Calculate Area & Volume of Catalyst for further use: Assuming spherical
@@ -90,31 +95,39 @@ Re = Reynolds_J(d_catalyst,u_super,flow_density,flow_viscosity); print("Reynolds
 j_d = J_factor_Re_Function(Re,Voidage); 
 Sc = Schmidt_Number(flow_viscosity,flow_density,Diffusivity_Toluene_in_Water); print("Schmidt Number = ",Sc)
 Sh = Sh_number_from_j_factor(j_d,Re,Sc); print("Sherwood Number = ",Sh)
-k_toluene = MT_coeff_Surface_film_from_Sh(Sh,Diffusivity_Toluene_in_Water,d_catalyst); print("Toluene Mass Transfer Coeff (m/s) = ",k_toluene)
+k_toluene = MT_coeff_Surface_film_from_Sh(Sh,Diffusivity_Toluene_in_Water,d_catalyst); print("Toluene Mass Transfer Coeff, k' (m/s) = ",k_toluene)
 print("------------------------------------------------------------")
 
-
-
-D_ea = Get_Effective_Diffusion_constant(intraparticle_void_fraction,Diffusivity_Toluene_in_Water,tortuosity_particle)
-Bi = Biot_number(k_toluene,d_catalyst/2,D_ea)
-D_p_corrected = Diffusion_coeff_pore(d_pore,gas_constant,Temp,MW_Toluene)
+#Find effective diffusion coefficient through catalyst:
+D_ea = Get_Effective_Diffusion_constant(intraparticle_void_fraction,Diffusivity_Toluene_in_Water,tortuosity_particle); print("Effective Diffusion Coeff (m2/s) = ",D_ea)
+Bi = Biot_number(k_toluene,d_catalyst/2,D_ea); print("Biot Number = ",Bi)
+D_p_corrected = Diffusion_coeff_pore(d_pore,gas_constant,Temp,MW_Toluene); print("Knudsen Corrected Diffusion Coeff (m/s) = ",D_p_corrected)
 TM = Thiele_Modulus(d_catalyst,(intrinsic_rate_coeff/a_s)*Conc_NA,D_p_corrected); print("Thiele Modulus = ",TM)
-
+if TM>1: print("Rate of Diffusion > Rate of Reaction") 
+elif TM==1: print("Rate of Diffusion = Rate of Reaction") 
+else: print("Rate of Diffusion < Rate of Reaction") 
+print("------------------------------------------------------------")
 effectiveness_factor,global_effectiveness_factor = Global_effectiveness_factor(TM,Bi)
-
-n_A0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Toluene_Feed)*Mass_Fraction_Toluene_Feed,MW_Toluene/1000)
-n_B0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Aqueous_Feed)*Mass_Fraction_NA_Aqueous_Feed,MW_NA/1000)
-
-Volume = Volume_Calc(v_total_second,global_effectiveness_factor,intrinsic_rate_coeff,Sb,n_A0,n_B0,x_A)
-Length_tube = Volume/Combined_Area
-Axial_Dispersion_Check(Length_tube,D_tube)
-print("Length of tube = ",Length_tube)
-
+print("Catalyst Effectivness Factor = ",effectiveness_factor);print("Global Effectivness Factor = ",global_effectiveness_factor)
+print("------------------------------------------------------------")
+n_A0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Toluene_Feed)*Mass_Fraction_Toluene_Feed,MW_Toluene/1000); print("Input Molar flowrate: Toluene (mol/s) = ",n_A0)
+n_B0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Aqueous_Feed)*Mass_Fraction_NA_Aqueous_Feed,MW_NA/1000); print("Input Molar flowrate: Nitric Acid (mol/s) = ",n_B0)
+n_G0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Aqueous_Feed)*(1-Mass_Fraction_NA_Aqueous_Feed),MW_H20/1000); print("Input Molar flowrate: Water (mol/s) = ",n_G0)
+print("------------------------------------------------------------")
+#Mass Balances:
+n_A = n_A0*(1-x_A); print("Output Flowrate: Toluene (mol/s) = ",n_A)
+n_B = n_B0 - Sb*n_A0*x_A; print("Output Flowrate: Nitric Acid (mol/s) = ",n_B)
+n_C = S_c*n_A0*x_A; print("Output Flowrate: 2-Nitrotoluene (mol/s) = ",n_C)
+n_D = S_d*n_A0*x_A; print("Output Flowrate: 3-Nitrotoluene (mol/s) = ",n_D)
+n_E = S_e*n_A0*x_A; print("Output Flowrate: 4-Nitrotoluene (mol/s) = ",n_E)
+n_F = S_f*n_A0*x_A; print("Output Flowrate: Dinitrotoluene (mol/s) = ",n_F)
+n_G = n_G0 + S_g*n_A0*x_A; print("Output Flowrate: Water (mol/s) = ",n_G)
 
 print("------------------------------------------------------------")
 C_A_surface  = conc_Tol_Aq*(1-(global_effectiveness_factor*intrinsic_rate_coeff*Conc_NA)/(k_toluene*a_s))
 #ALTERNATE REACTOR SIZE -> Assuming Constant concentrations of Toluene & HNO3:
-V_R_Const = n_A0*(1-x_A)/(global_effectiveness_factor*intrinsic_rate_coeff*Conc_NA*conc_Tol_Aq)
+#V_R_Const = n_A0*(1-x_A)/(global_effectiveness_factor*intrinsic_rate_coeff*Conc_NA*conc_Tol_Aq)
+V_R_Const = (-v_total_second/(global_effectiveness_factor*intrinsic_rate_coeff*conc_Tol_Aq*Sb))*math.log(1-(Sb*n_A0/n_B0)*x_A)
 print("Assuming Constant concentrations of Toluene & HNO3: Volume = ",V_R_Const)
 Length_tube_constant = V_R_Const/Combined_Area
 print("Length of tube = ",Length_tube_constant);Axial_Dispersion_Check(Length_tube_constant,D_tube)
