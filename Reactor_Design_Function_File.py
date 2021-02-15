@@ -5,6 +5,19 @@ Created on Thu Feb 11 11:32:46 2021
 
 @author: henryorlebar
 """
+def TEST_AQUEOUS_MASS_FLOWRATES(x,Current_Level,LB,UB,number_points): #testing switch for aqueous flowrate
+    import numpy as np
+    if x==1:
+        number_set = range(0,number_points)
+        test_set = np.linspace(LB,UB,number_points)
+        Push_value = 1
+    elif x==0:
+        number_set = range(0,1)
+        test_set = [];test_set.append(Current_Level)
+        Push_value = 0
+    return number_set,test_set,Push_value
+
+
 def Concentration_from_MassComp(Molar_Mass,Mass_Fraction,Mass_Density):
     Concentration = Mass_Fraction*(Mass_Density*1000/Molar_Mass)
     return Concentration
@@ -129,8 +142,11 @@ def Diffusion_coeff_pore(d_pore,gas_constant,temperature,Toluene_MolarMass):
 def Axial_Dispersion_Check(Length,particle_diameter):
     if Length > 50*particle_diameter:
         print("Axial Dispersion Negligible: L>50dp")
+        AD = 1
     else:
         print("Axial Dispersion NOT Negligible: L<50dp")
+        AD = 0
+    return AD
         
 def Area_Volume_Catalyst_Spherical(diameter):
     import math
