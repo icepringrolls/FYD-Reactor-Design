@@ -72,6 +72,9 @@ effectiveness_factor,global_effectiveness_factor = Global_effectiveness_factor(T
 n_A0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Toluene_Feed)*Mass_Fraction_Toluene_Feed,MW_Toluene/1000)
 n_B0 = Get_Molar_Flowrate(per_hour_to_per_second(Mass_Aqueous_Feed)*Mass_Fraction_NA_Aqueous_Feed,MW_NA/1000)
 
+C_A0 = initial_conc_overall(n_A0 , v_total_second)
+C_B0 = initial_conc_overall(n_B0, v_total_second)
+
 Volume = Volume_Calc(v_total_second,global_effectiveness_factor,intrinsic_rate_coeff,Sb,n_A0,n_B0,x_A)
 Length_tube = Volume/Combined_Area
 print("Length of tube = ",Length_tube)

@@ -5,6 +5,7 @@ Created on Thu Feb 11 11:32:46 2021
 
 @author: henryorlebar
 """
+
 def Concentration_from_MassComp(Molar_Mass,Mass_Fraction,Mass_Density):
     Concentration = Mass_Fraction*(Mass_Density/Molar_Mass)
     return Concentration
@@ -13,6 +14,9 @@ def Get_Molar_Flowrate(Mass_Flowrate,molar_weight):
     Molar_Flowrate = Mass_Flowrate/molar_weight
     return Molar_Flowrate
 
+def initial_conc_overall(molar_flowrate, total_volumetric_flowrate):
+    concentration = molar_flowrate/total_volumetric_flowrate
+    return concentration
 
 def per_hour_to_per_second(per_hour_variable):
     per_second = per_hour_variable/3600

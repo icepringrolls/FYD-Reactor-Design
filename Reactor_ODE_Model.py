@@ -17,7 +17,7 @@ class modelparameters:
 
         # --------------------------------#
         # Aqueous Feed Composition:
-        self.Mass_Aqueous_Feed = 700  # kg/h
+        self.Mass_Aqueous_Feed = 530  # kg/h
         self.Mass_Fraction_NA_Aqueous_Feed = 0.7  # kg/h - Remainder = Water
         self.Density_Aqueous_Feed = 1000  # kg/m3
         self.Viscosity_Aq = 8.9 * 10 ** (-4)
@@ -39,7 +39,7 @@ class modelparameters:
         self.d_pore = 20e-10
         self.tortuosity_particle = 1.3  # https://www.sciencedirect.com/science/article/pii/S0304389405007594
         self.intraparticle_void_fraction = 0.39
-        self.frequency_factor = math.exp(62.362)  # M-1s-1
+        self.frequency_factor = po.exp(62.63)  # M-1s-1
         self.activation_energy = 22830
         self.x_A = 0.7  # conversion of toluene
         self.Sb = 1.0055
@@ -77,6 +77,14 @@ class modelparameters:
         self.Bi = Biot_number(self.k_toluene, self.d_catalyst / 2, self.D_ea)
         self.product_selectivity = 1.05
 
+        self.n_A0 = Get_Molar_Flowrate(per_hour_to_per_second(self.Mass_Toluene_Feed) * self.Mass_Fraction_Toluene_Feed,
+                                  self.MW_Toluene / 1000)
+        self.n_B0 = Get_Molar_Flowrate(per_hour_to_per_second(self.Mass_Aqueous_Feed) * self.Mass_Fraction_NA_Aqueous_Feed,
+                                  self.MW_NA / 1000)
+
+        self.C_A0 = initial_conc_overall(self.n_A0, self.v_total_second)
+        self.C_B0 = initial_conc_overall(self.n_B0, self.v_total_second)
+
 modelparameters = modelparameters()
 
 
@@ -92,7 +100,7 @@ def create_mdoel(modelparameters):
     model.u_super = po.Param(initialize = modelparameters.u_super)
     model.D_ea = po.Param(initialize = modelparameters.D_ea)
     model.temperature = po.Param(initialize= modelparameters.Temp)
-    model.intrinsic_rate_constant = po.Param(initialize = 0.001)
+    model.intrinsic_rate_constant = po.Param(initialize = modelparameters.frequency_factor * po.exp(- modelparameters.activation_energy/modelparameters.Temp))
 
 
     """defining model variables"""
@@ -107,8 +115,8 @@ def create_mdoel(modelparameters):
 
 
     """intial conditions"""
-    model.C[0, "Nitric"].fix(modelparameters.initial_nitric_conc)
-    model.C[0, "Toluene"].fix(modelparameters.initial_toluene_conc)
+    model.C[0, "Nitric"].fix(modelparameters.C_B0)
+    model.C[0, "Toluene"].fix(modelparameters.C_A0)
     model.P[0].fix(0)
 
 
@@ -124,7 +132,7 @@ def create_mdoel(modelparameters):
     model.calculate_global_effectiveness_factor = po.Constraint(model.z, rule = _calcualte_global_effectiveness_factor)
 
     def _calculate_reaction_rate(m,z):
-        return m.reaction_rate[z] == m.global_effectiveness_factor[z]*m.intrinsic_rate_constant*m.C[z,"Nitric"] *m.C[z,"Toluene"]
+        return m.reaction_rate[z] == m.global_effectiveness_factor[z] * m.intrinsic_rate_constant * m.C[z,"Nitric"] * m.C[z,"Toluene"]
     model.calculate_reaction_rate = po.Constraint(model.z, rule = _calculate_reaction_rate)
 
     def _material_balance_reactants(m,z,i):
