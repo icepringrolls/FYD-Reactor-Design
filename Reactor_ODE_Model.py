@@ -3,64 +3,183 @@ from pyomo import environ as po
 import math
 import numpy as np
 from Reactor_Design_Function_File import *
+from matplotlib import pyplot as plt
+
+class modelparameters:
+    def __init__(self):
+
+        # =================================#
+        # Organic Feed Composition:
+        self.Mass_Toluene_Feed = 270  # kg/h
+        self.Mass_Fraction_Toluene_Feed = 1  # kg/h
+        self.Density_Toluene_Feed = 867  # kg/m3
+        self.Viscosity_Toluene = 0.56 * 10 ** (-3)
+
+        # --------------------------------#
+        # Aqueous Feed Composition:
+        self.Mass_Aqueous_Feed = 700  # kg/h
+        self.Mass_Fraction_NA_Aqueous_Feed = 0.7  # kg/h - Remainder = Water
+        self.Density_Aqueous_Feed = 1000  # kg/m3
+        self.Viscosity_Aq = 8.9 * 10 ** (-4)
+
+        # ===============================#
+        self.MW_Toluene = 92.14  # g/mol or kg/kmol
+        self.MW_NA = 63.01  # g/mol or kg/kmol
+
+        # ---------------------------------#
+        self.d_catalyst = 0.003  # m
+        self.D_tube_minimum = 8 * self.d_catalyst
+        self.D_tube = self.D_tube_minimum*2
+        self.Number_tubes = 20  # number of tubes in bundle
+        self.Initial_volume = 0.007885  # m3
+        self.Initial_Voidage = 0.7  # 70% free space
+        self.Voidage = self.Initial_Voidage
+        self.Diffusivity_Toluene_in_Water = 8.6 * 10 ** (-12)
+        self.Saturated_Toluene_Conc = 515  # mg/L or g/m3
+        self.d_pore = 20e-10
+        self.tortuosity_particle = 1.3  # https://www.sciencedirect.com/science/article/pii/S0304389405007594
+        self.intraparticle_void_fraction = 0.39
+        self.frequency_factor = math.exp(62.362)  # M-1s-1
+        self.activation_energy = 22830
+        self.x_A = 0.7  # conversion of toluene
+        self.Sb = 1.0055
+        self.gas_constant = 8.314  # J/k/mol
+        self.Temp = 333  # K
+
+        # ---------------------------------#
+        # Intial calculations of model
+        self.initial_toluene_conc = Concentration_from_MassComp(self.MW_Toluene, self.Mass_Fraction_Toluene_Feed, self.Density_Toluene_Feed)
+        self.initial_nitric_conc = Concentration_from_MassComp(self.MW_NA, self.Mass_Fraction_NA_Aqueous_Feed, self.Density_Aqueous_Feed)
+        self.Area_tube = Area_Circle(self.D_tube); self.Combined_Area = self.Area_tube * self.Number_tubes
+
+        self.v_total_hour, self.v_frac_organic, self.v_frac_aq, self.flow_density, self.flow_viscosity = Vol_Flow_proportions(self.Mass_Toluene_Feed,
+                                                                                                     self.Density_Toluene_Feed,
+                                                                                                     self.Mass_Aqueous_Feed,
+                                                                                                     self.Density_Aqueous_Feed,
+                                                                                                     self.Viscosity_Toluene,
+                                                                                                     self.Viscosity_Aq)  # m3/hr
+
+        self.v_total_second = per_hour_to_per_second(self.v_total_hour)
+
+        self.u_super = Superficial_velocity(self.v_total_second, self.Combined_Area)
+
+        self.Re = Reynolds_J(self.d_catalyst, self.u_super, self.flow_density, self.flow_viscosity)
+
+        self.Re_Check = Reynolds_Assumption_Check(self.Re)
+        self.j_d = J_factor_Re_Function(self.Re, self.Voidage);
+        self.Sc = Schmidt_Number(self.flow_viscosity, self.flow_density, self.Diffusivity_Toluene_in_Water)
+        self.Sh = Sh_number_from_j_factor(self.j_d, self.Re, self.Sc)
+        self.k_toluene = MT_coeff_Surface_film_from_Sh(self.Sh, self.Diffusivity_Toluene_in_Water, self.d_catalyst)
+
+        self.D_p_corrected = Diffusion_coeff_pore(self.d_pore, self.gas_constant, self.Temp, self.MW_Toluene)
+        self.D_ea = Get_Effective_Diffusion_constant(self.intraparticle_void_fraction, self.D_p_corrected,
+                                                     self.tortuosity_particle)
+        self.Bi = Biot_number(self.k_toluene, self.d_catalyst / 2, self.D_ea)
+        self.product_selectivity = 1.05
+
+modelparameters = modelparameters()
 
 
 def create_mdoel(modelparameters):
     model = po.ConcreteModel()
 
-
-
-
-    def _get_global_effectiveness_factor():
-
-
-
     """"defining fixed parameters"""
-    model.Bi = modelparameters.Bi
+    model.biot_number = po.Param(initialize = modelparameters.Bi)
+    model.frequency_factor = po.Param(initialize = modelparameters.frequency_factor)
+    model.activation_energy = po.Param(initialize = modelparameters.activation_energy)
+    model.d_catalyst = po.Param(initialize = modelparameters.d_catalyst)
+    model.product_selectivity = po.Param(initialize = modelparameters.product_selectivity)
+    model.u_super = po.Param(initialize = modelparameters.u_super)
+    model.D_ea = po.Param(initialize = modelparameters.D_ea)
+    model.temperature = po.Param(initialize= modelparameters.Temp)
+    model.intrinsic_rate_constant = po.Param(initialize = 0.001)
 
 
     """defining model variables"""
-    model.z = pod.ContinuousSet()
-    model.temperature = po.Var()
-    model.C_nitric = po.Var()
-    model.C_toluene = po.Var()
-    model.intrinsic_rate_constant = po.Var()
-    model.dN_dz = pod.DerivativeVar(model.C_nitric, wrt=model.z)
-    model.dT_dz = pod.DerivativeVar(model.C_toluene, wrt=model.z)
-    model.effectiveness_factor = #call global effectiveness function
-
-    def _calculate_intrinsic_rate_constant(m,i):
-        return m.intrinsic_rate_constant == m.frequency_factor * math.exp(-m.activation_energy * m.temperature)
-    model.calculate_intrinsic_rate_constant = po.Constraint(model.temperature, rule = _calculate_intrinsic_rate_constant)
-
-    def _calcualte_global_effectiveness_factpr(m,i):
-        m.catalyst_rate_constant = m.intrisic_rate_constant * m.C_nitric
-        m.thielemodulus = Thiele_Modulus(Diameter_Particle = m.d_catalyst)
-        m.
+    model.z = pod.ContinuousSet(bounds = (0,5))
+    model.global_effectiveness_factor = po.Var(model.z)
+    model.i = po.Set(initialize = ["Nitric", "Toluene"])
+    model.reaction_rate = po.Var(model.z)
+    model.C = po.Var(model.z, model.i)
+    model.P = po.Var(model.z)
+    model.dC_dz = pod.DerivativeVar(model.C , wrt = model.z)
+    model.dP_dz = pod.DerivativeVar(model.P, wrt = model.z)
 
 
+    """intial conditions"""
+    model.C[0, "Nitric"].fix(modelparameters.initial_nitric_conc)
+    model.C[0, "Toluene"].fix(modelparameters.initial_toluene_conc)
+    model.P[0].fix(0)
 
 
-    def _material_balance_nitric():
+    """def _calculate_intrinsic_rate_constant(m,z):
+        return m.intrinsic_rate_constant[z] == m.frequency_factor * po.exp(-m.activation_energy / m.temperature)
+    model.calculate_intrinsic_rate_constant = po.Constraint(model.z, rule = _calculate_intrinsic_rate_constant)"""
 
+    def _calcualte_global_effectiveness_factor(m,z):
+        catalyst_rate_constant = m.intrinsic_rate_constant * m.C[z, "Nitric"]
+        thielemodulus = Thiele_Modulus(Diameter_Particle = m.d_catalyst, Intrinsic_Rate = catalyst_rate_constant, D_ea = m.D_ea)
+        effectiveness_factor = po.tanh(thielemodulus)/thielemodulus
+        return m.global_effectiveness_factor[z] == ((1/effectiveness_factor)+((thielemodulus**2)/m.biot_number))**(-1)
+    model.calculate_global_effectiveness_factor = po.Constraint(model.z, rule = _calcualte_global_effectiveness_factor)
 
-    model.material_balance_nitric = po.Constraint(model.z, rule = _material_balance_nitric)
+    def _calculate_reaction_rate(m,z):
+        return m.reaction_rate[z] == m.global_effectiveness_factor[z]*m.intrinsic_rate_constant*m.C[z,"Nitric"] *m.C[z,"Toluene"]
+    model.calculate_reaction_rate = po.Constraint(model.z, rule = _calculate_reaction_rate)
 
+    def _material_balance_reactants(m,z,i):
+        return m.dC_dz[z,i] == -(1/m.u_super)*(m.reaction_rate[z])
+    model.material_balance_nitric = po.Constraint(model.z, model.i , rule = _material_balance_reactants)
 
-    def _material_balance_toluene():
-
-
-    model.material_balance_Toluene = po.Constraint(model.z, rule = *_material_balance_toluene())
-
+    def _material_balance_products(m,z):
+        return m.dP_dz[z] == (1/m.u_super)*(m.reaction_rate[z])*(m.product_selectivity)
+    model.material_balance_products = po.Constraint(model.z, rule = _material_balance_products)
 
     return model
 
 
-def simulate_model():
+def simulate_model(modelparameters):
     """simulating"""
-    model = create_mdoel()
-    simulator = pod.Simulator(model, package= 'casadi')
-    simulator.simulate(integrator = 'idas')
-    simulator.initialize_model()
+    model = create_mdoel(modelparameters = modelparameters )
+    simulator = pod.Simulator(model, package = 'casadi')
+    results = simulator.simulate(integrator = 'idas')
     discretizer = po.TransformationFactory("dae.collocation")
     discretizer.apply_to(model, nfe = 10, ncp = 3, scheme= "LAGRANGE-RADAU")
+    simulator.initialize_model()
+    result_list = [model.C[z,"Nitric"].value for z in model.z]
+    return results, result_list
+
+
+"""simulating and plotting results"""
+results, result_list = simulate_model(modelparameters= modelparameters)
+
+resultmatrix = results[1]
+length_index = results[0]
+nitric_conc = resultmatrix[:,0]
+toluene_conc = resultmatrix[:,1]
+product_conc = resultmatrix[:,2]
+global_effectiveness_factor = resultmatrix[:,3]
+reaction_rate = resultmatrix[:,4]
+
+plt.figure(1)
+plt.plot(length_index,nitric_conc)
+plt.title("Nitric Acid Concentration")
+
+plt.figure(2)
+plt.plot(length_index,toluene_conc)
+plt.title("Toluene Concentration")
+
+plt.figure(3)
+plt.plot(length_index,product_conc)
+plt.title("Product Concentration")
+
+plt.figure(4)
+plt.plot(length_index ,global_effectiveness_factor)
+plt.title("Global Effectiveness Factor")
+
+plt.figure(5)
+plt.plot(length_index , reaction_rate)
+plt.title("Reaction Rate")
+
+plt.show()
+

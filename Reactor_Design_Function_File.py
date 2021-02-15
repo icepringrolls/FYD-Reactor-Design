@@ -79,7 +79,8 @@ def Biot_number(kmc,particle_radius,D_ea):
 
 def Thiele_Modulus(Diameter_Particle,Intrinsic_Rate,D_ea):
     import math
-    TM = (Diameter_Particle/6)*math.sqrt(Intrinsic_Rate/D_ea)
+    from pyomo import environ as po
+    TM = (Diameter_Particle/6)*po.sqrt(Intrinsic_Rate/D_ea)
     return TM
 
 def Global_effectiveness_factor(Thiele_modulus,Biot_Number):

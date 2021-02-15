@@ -62,10 +62,10 @@ Sc = Schmidt_Number(flow_viscosity,flow_density,Diffusivity_Toluene_in_Water)
 Sh = Sh_number_from_j_factor(j_d,Re,Sc)
 k_toluene = MT_coeff_Surface_film_from_Sh(Sh,Diffusivity_Toluene_in_Water,d_catalyst)
 #Add new diffusion coeff eqn
-D_ea = Get_Effective_Diffusion_constant(intraparticle_void_fraction,Diffusivity_Toluene_in_Water,tortuosity_particle)
-Bi = Biot_number(k_toluene,d_catalyst/2,D_ea)
 D_p_corrected = Diffusion_coeff_pore(d_pore,gas_constant,Temp,MW_Toluene)
-TM = Thiele_Modulus(d_catalyst,intrinsic_rate_coeff,D_p_corrected)
+D_ea = Get_Effective_Diffusion_constant(intraparticle_void_fraction,D_p_corrected,tortuosity_particle)
+Bi = Biot_number(k_toluene,d_catalyst/2,D_ea)
+TM = Thiele_Modulus(d_catalyst,intrinsic_rate_coeff,D_ea)
 
 effectiveness_factor,global_effectiveness_factor = Global_effectiveness_factor(TM,Bi)
 
