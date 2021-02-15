@@ -189,5 +189,7 @@ plt.figure(5)
 plt.plot(length_index , reaction_rate)
 plt.title("Reaction Rate")
 
-plt.show()
+conversion = 1 - (toluene_conc[99]/toluene_conc[0])
+print("The conversion is" , conversion)
 
+plt.show()

@@ -15,7 +15,7 @@ def Get_Molar_Flowrate(Mass_Flowrate,molar_weight):
     return Molar_Flowrate
 
 def initial_conc_overall(molar_flowrate, total_volumetric_flowrate):
-    concentration = molar_flowrate/total_volumetric_flowrate
+    concentration = molar_flowrate/(total_volumetric_flowrate * 1000)
     return concentration
 
 def per_hour_to_per_second(per_hour_variable):

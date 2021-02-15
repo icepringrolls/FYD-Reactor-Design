@@ -87,5 +87,3 @@ for i in range(0,1000):
     L_x.append(Vol_x[i]/Combined_Area)
 
 
-
-#hello testing 
