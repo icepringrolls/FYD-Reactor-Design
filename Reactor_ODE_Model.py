@@ -6,14 +6,14 @@ from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
 
 class modelparameters:
-    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length ):
+    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length, Density_Toluene_Feed,Viscosity_Toluene ):
 
         # =================================#
         # Organic Feed Composition:
         self.Mass_Toluene_Feed = Mass_Toluene_Feed  # kg/h
         self.Mass_Fraction_Toluene_Feed = 1  # kg/h
-        self.Density_Toluene_Feed = 867  # kg/m3
-        self.Viscosity_Toluene = 0.56 * 10 ** (-3)
+        self.Density_Toluene_Feed = Density_Toluene_Feed  # kg/m3
+        self.Viscosity_Toluene = Viscosity_Toluene
 
         # --------------------------------#
         # Aqueous Feed Composition:
