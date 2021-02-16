@@ -6,7 +6,7 @@ from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
 
 class modelparameters:
-    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, ):
+    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length ):
 
         # =================================#
         # Organic Feed Composition:
@@ -30,6 +30,7 @@ class modelparameters:
         self.d_catalyst = d_catalyst  # m
         self.D_tube_minimum = 8 * self.d_catalyst
         self.D_tube = self.D_tube_minimum * diameter_ratio
+        self.length = length
         self.Number_tubes = Number_tubes  # number of tubes in bundle
         self.Initial_volume = 0.007885  # m3
         self.Initial_Voidage = Initial_Voidage  # 70% free space
@@ -107,7 +108,7 @@ def create_mdoel(modelparameters):
 
 
     """defining model variables"""
-    model.z = pod.ContinuousSet(bounds = (0,10))
+    model.z = pod.ContinuousSet(bounds = (0,modelparameters.length))
     model.global_effectiveness_factor = po.Var(model.z)
     model.i = po.Set(initialize = ["Nitric", "Toluene"])
     model.reaction_rate = po.Var(model.z)
