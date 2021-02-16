@@ -6,18 +6,18 @@ from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
 
 class modelparameters:
-    def __init__(self, d_catalyst):
+    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, ):
 
         # =================================#
         # Organic Feed Composition:
-        self.Mass_Toluene_Feed = 270  # kg/h
+        self.Mass_Toluene_Feed = Mass_Toluene_Feed  # kg/h
         self.Mass_Fraction_Toluene_Feed = 1  # kg/h
         self.Density_Toluene_Feed = 867  # kg/m3
         self.Viscosity_Toluene = 0.56 * 10 ** (-3)
 
         # --------------------------------#
         # Aqueous Feed Composition:
-        self.Mass_Aqueous_Feed = 530  # kg/h
+        self.Mass_Aqueous_Feed = Mass_Aqueous_Feed  # kg/h
         self.Mass_Fraction_NA_Aqueous_Feed = 0.7  # kg/h - Remainder = Water
         self.Density_Aqueous_Feed = 1000  # kg/m3
         self.Viscosity_Aq = 8.9 * 10 ** (-4)
@@ -29,10 +29,10 @@ class modelparameters:
         # ---------------------------------#
         self.d_catalyst = d_catalyst  # m
         self.D_tube_minimum = 8 * self.d_catalyst
-        self.D_tube = self.D_tube_minimum*2
-        self.Number_tubes = 20  # number of tubes in bundle
+        self.D_tube = self.D_tube_minimum * diameter_ratio
+        self.Number_tubes = Number_tubes  # number of tubes in bundle
         self.Initial_volume = 0.007885  # m3
-        self.Initial_Voidage = 0.7  # 70% free space
+        self.Initial_Voidage = Initial_Voidage  # 70% free space
         self.Voidage = self.Initial_Voidage
         self.Diffusivity_Toluene_in_Water = 8.6 * 10 ** (-12)
         self.Saturated_Toluene_Conc = 515  # mg/L or g/m3
@@ -87,7 +87,6 @@ class modelparameters:
         self.C_A0 = initial_conc_overall(self.n_A0, self.v_total_second)
         self.C_B0 = initial_conc_overall(self.n_B0, self.v_total_second)
 
-modelparameters = modelparameters( d_catalyst = 0.004)
 
 
 def create_mdoel(modelparameters):
@@ -161,39 +160,38 @@ def simulate_model(modelparameters):
     result_list = [model.C[z,"Nitric"].value for z in model.z]
     return results, result_list
 
-
 """simulating and plotting results"""
-results, result_list = simulate_model(modelparameters= modelparameters)
+def plot_simulation_results(results):
+    resultmatrix = results[1]
+    length_index = results[0]
+    nitric_conc = resultmatrix[:,0]
+    toluene_conc = resultmatrix[:,1]
+    product_conc = resultmatrix[:,2]
+    global_effectiveness_factor = resultmatrix[:,3]
+    reaction_rate = resultmatrix[:,4]
 
-resultmatrix = results[1]
-length_index = results[0]
-nitric_conc = resultmatrix[:,0]
-toluene_conc = resultmatrix[:,1]
-product_conc = resultmatrix[:,2]
-global_effectiveness_factor = resultmatrix[:,3]
-reaction_rate = resultmatrix[:,4]
+    plt.figure(1)
+    plt.plot(length_index,nitric_conc)
+    plt.title("Nitric Acid Concentration WRT Length")
 
-plt.figure(1)
-plt.plot(length_index,nitric_conc)
-plt.title("Nitric Acid Concentration")
+    plt.figure(2)
+    plt.plot(length_index,toluene_conc)
+    plt.title("Toluene Concentration WRT Length")
 
-plt.figure(2)
-plt.plot(length_index,toluene_conc)
-plt.title("Toluene Concentration")
+    plt.figure(3)
+    plt.plot(length_index,product_conc)
+    plt.title("Product Concentration WRT Length")
 
-plt.figure(3)
-plt.plot(length_index,product_conc)
-plt.title("Product Concentration")
+    plt.figure(4)
+    plt.plot(length_index ,global_effectiveness_factor)
+    plt.title("Global Effectiveness Factor WRT Length")
 
-plt.figure(4)
-plt.plot(length_index ,global_effectiveness_factor)
-plt.title("Global Effectiveness Factor")
+    plt.figure(5)
+    plt.plot(length_index , reaction_rate)
+    plt.title("Reaction Rate WRT Length")
 
-plt.figure(5)
-plt.plot(length_index , reaction_rate)
-plt.title("Reaction Rate")
-
-conversion = 1 - (toluene_conc[99]/toluene_conc[0])
-print("The conversion is" , conversion)
-
-plt.show()
+    conversion = 1 - (toluene_conc/toluene_conc[0])
+    plt.figure(6)
+    plt.plot(length_index, conversion)
+    plt.title("Toluene Conversion WRT Length")
+    plt.show()
