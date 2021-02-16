@@ -6,7 +6,7 @@ from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
 
 class modelparameters:
-    def __init__(self):
+    def __init__(self, d_catalyst):
 
         # =================================#
         # Organic Feed Composition:
@@ -27,7 +27,7 @@ class modelparameters:
         self.MW_NA = 63.01  # g/mol or kg/kmol
 
         # ---------------------------------#
-        self.d_catalyst = 0.003  # m
+        self.d_catalyst = d_catalyst  # m
         self.D_tube_minimum = 8 * self.d_catalyst
         self.D_tube = self.D_tube_minimum*2
         self.Number_tubes = 20  # number of tubes in bundle
@@ -70,6 +70,8 @@ class modelparameters:
         self.Sc = Schmidt_Number(self.flow_viscosity, self.flow_density, self.Diffusivity_Toluene_in_Water)
         self.Sh = Sh_number_from_j_factor(self.j_d, self.Re, self.Sc)
         self.k_toluene = MT_coeff_Surface_film_from_Sh(self.Sh, self.Diffusivity_Toluene_in_Water, self.d_catalyst)
+        self.Area_Cat, self.Vol_Cat = Area_Volume_Catalyst_Spherical(self.d_catalyst)
+        self.a_s = specific_area(self.Voidage, self.Area_Cat, self.Vol_Cat) * self.v_frac_aq
 
         self.D_p_corrected = Diffusion_coeff_pore(self.d_pore, self.gas_constant, self.Temp, self.MW_Toluene)
         self.D_ea = Get_Effective_Diffusion_constant(self.intraparticle_void_fraction, self.D_p_corrected,
@@ -85,7 +87,7 @@ class modelparameters:
         self.C_A0 = initial_conc_overall(self.n_A0, self.v_total_second)
         self.C_B0 = initial_conc_overall(self.n_B0, self.v_total_second)
 
-modelparameters = modelparameters()
+modelparameters = modelparameters( d_catalyst = 0.004)
 
 
 def create_mdoel(modelparameters):
@@ -101,10 +103,12 @@ def create_mdoel(modelparameters):
     model.D_ea = po.Param(initialize = modelparameters.D_ea)
     model.temperature = po.Param(initialize= modelparameters.Temp)
     model.intrinsic_rate_constant = po.Param(initialize = modelparameters.frequency_factor * po.exp(- modelparameters.activation_energy/modelparameters.Temp))
+    #model.a_s = po.Param(initialize = modelparameters.a_s)
+    model.v_frac_aq = po.Param(initialize = modelparameters.v_frac_aq)
 
 
     """defining model variables"""
-    model.z = pod.ContinuousSet(bounds = (0,5))
+    model.z = pod.ContinuousSet(bounds = (0,10))
     model.global_effectiveness_factor = po.Var(model.z)
     model.i = po.Set(initialize = ["Nitric", "Toluene"])
     model.reaction_rate = po.Var(model.z)
@@ -132,15 +136,15 @@ def create_mdoel(modelparameters):
     model.calculate_global_effectiveness_factor = po.Constraint(model.z, rule = _calcualte_global_effectiveness_factor)
 
     def _calculate_reaction_rate(m,z):
-        return m.reaction_rate[z] == m.global_effectiveness_factor[z] * m.intrinsic_rate_constant * m.C[z,"Nitric"] * m.C[z,"Toluene"]
+        return m.reaction_rate[z] ==  m.v_frac_aq * m.global_effectiveness_factor[z] * m.intrinsic_rate_constant * m.C[z,"Nitric"] * m.C[z,"Toluene"]
     model.calculate_reaction_rate = po.Constraint(model.z, rule = _calculate_reaction_rate)
 
     def _material_balance_reactants(m,z,i):
-        return m.dC_dz[z,i] == -(1/m.u_super)*(m.reaction_rate[z])
+        return m.dC_dz[z,i] == -(1/m.u_super)*(m.reaction_rate[z])*(m.product_selectivity)
     model.material_balance_nitric = po.Constraint(model.z, model.i , rule = _material_balance_reactants)
 
     def _material_balance_products(m,z):
-        return m.dP_dz[z] == (1/m.u_super)*(m.reaction_rate[z])*(m.product_selectivity)
+        return m.dP_dz[z] == (1/m.u_super)*(m.reaction_rate[z])
     model.material_balance_products = po.Constraint(model.z, rule = _material_balance_products)
 
     return model
