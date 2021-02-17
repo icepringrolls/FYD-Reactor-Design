@@ -7,7 +7,8 @@ from matplotlib import pyplot as plt
 
 class modelparameters:
     def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length, Density_Toluene_Feed,Viscosity_Toluene,
-                 Mass_Fraction_NA_Aqueous_Feed,Density_Aqueous_Feed,Viscosity_Aq,D_tube_minimum,D_tube):
+                 Mass_Fraction_NA_Aqueous_Feed,Density_Aqueous_Feed,Viscosity_Aq,D_tube_minimum,D_tube,MW_Toluene,MW_NA,Diffusivity_Toluene_in_Water,
+                 Saturated_Toluene_Conc,d_pore,tortuosity_particle,intraparticle_void_fraction,x_A,Sb,Temp):
 
         # =================================#
         # Organic Feed Composition:
@@ -24,8 +25,8 @@ class modelparameters:
         self.Viscosity_Aq = Viscosity_Aq
 
         # ===============================#
-        self.MW_Toluene = 92.14  # g/mol or kg/kmol
-        self.MW_NA = 63.01  # g/mol or kg/kmol
+        self.MW_Toluene = MW_Toluene  # g/mol or kg/kmol
+        self.MW_NA = MW_NA # g/mol or kg/kmol
 
         # ---------------------------------#
         self.d_catalyst = d_catalyst  # m
@@ -33,20 +34,19 @@ class modelparameters:
         self.D_tube = D_tube
         self.length = length
         self.Number_tubes = Number_tubes  # number of tubes in bundle
-        self.Initial_volume = 0.007885  # m3
         self.Initial_Voidage = Initial_Voidage  # 70% free space
         self.Voidage = self.Initial_Voidage
-        self.Diffusivity_Toluene_in_Water = 8.6 * 10 ** (-12)
-        self.Saturated_Toluene_Conc = 515  # mg/L or g/m3
-        self.d_pore = 20e-10
-        self.tortuosity_particle = 1.3  # https://www.sciencedirect.com/science/article/pii/S0304389405007594
-        self.intraparticle_void_fraction = 0.39
+        self.Diffusivity_Toluene_in_Water = Diffusivity_Toluene_in_Water
+        self.Saturated_Toluene_Conc = Saturated_Toluene_Conc  # mg/L or g/m3
+        self.d_pore = d_pore
+        self.tortuosity_particle = tortuosity_particle # https://www.sciencedirect.com/science/article/pii/S0304389405007594
+        self.intraparticle_void_fraction = intraparticle_void_fraction
         self.frequency_factor = po.exp(62.63)  # M-1s-1
         self.activation_energy = 22830
-        self.x_A = 0.7  # conversion of toluene
-        self.Sb = 1.0055
+        self.x_A = x_A  # conversion of toluene
+        self.Sb = Sb
         self.gas_constant = 8.314  # J/k/mol
-        self.Temp = 333  # K
+        self.Temp = Temp  # K
 
         # ---------------------------------#
         # Intial calculations of model
