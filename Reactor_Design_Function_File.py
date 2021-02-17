@@ -173,3 +173,15 @@ def Weisz_Platz(effectiveness_factor,Thiele_Modulus):
     if WP<1:
         print("Negligible Internal diffusion limitations")
     return WP
+
+def Pr_Correlation(Cp, viscosity, thermal_conductivity):
+    Prandtl = Cp*viscosity/thermal_conductivity
+    return Prandtl
+
+def Nu_Correlation(Re, Pr):
+    Nusselt = 2 + (0.4*Re**0.5 + 0.06*Re**0.6667)*Pr*0.4
+    return Nusselt
+
+def hf_Correlatrion(Nu, thermal_conductivity, length):
+    hf = Nu * thermal_conductivity / length
+    return hf
