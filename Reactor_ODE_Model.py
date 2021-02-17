@@ -6,7 +6,8 @@ from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
 
 class modelparameters:
-    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length, Density_Toluene_Feed,Viscosity_Toluene ):
+    def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length, Density_Toluene_Feed,Viscosity_Toluene,
+                 Mass_Fraction_NA_Aqueous_Feed,Density_Aqueous_Feed,Viscosity_Aq,D_tube_minimum,D_tube):
 
         # =================================#
         # Organic Feed Composition:
@@ -18,9 +19,9 @@ class modelparameters:
         # --------------------------------#
         # Aqueous Feed Composition:
         self.Mass_Aqueous_Feed = Mass_Aqueous_Feed  # kg/h
-        self.Mass_Fraction_NA_Aqueous_Feed = 0.7  # kg/h - Remainder = Water
-        self.Density_Aqueous_Feed = 1000  # kg/m3
-        self.Viscosity_Aq = 8.9 * 10 ** (-4)
+        self.Mass_Fraction_NA_Aqueous_Feed = Mass_Fraction_NA_Aqueous_Feed  # kg/h - Remainder = Water
+        self.Density_Aqueous_Feed = Density_Aqueous_Feed  # kg/m3
+        self.Viscosity_Aq = Viscosity_Aq
 
         # ===============================#
         self.MW_Toluene = 92.14  # g/mol or kg/kmol
@@ -28,8 +29,8 @@ class modelparameters:
 
         # ---------------------------------#
         self.d_catalyst = d_catalyst  # m
-        self.D_tube_minimum = 8 * self.d_catalyst
-        self.D_tube = self.D_tube_minimum * diameter_ratio
+        self.D_tube_minimum = D_tube_minimum
+        self.D_tube = D_tube
         self.length = length
         self.Number_tubes = Number_tubes  # number of tubes in bundle
         self.Initial_volume = 0.007885  # m3
