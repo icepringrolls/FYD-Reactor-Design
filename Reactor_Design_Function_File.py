@@ -195,3 +195,8 @@ def Get_U_mf(Bed_Voidage,Solid_Density,particle_diameter,v_total_hour,v_frac_org
     Re = max(sol1,sol2); print("Reynolds Number across Sphere at Fluidization = ",Re)
     U_mf = Re*flow_viscosity/(flow_density*particle_diameter); print("Minimum Fludisation Velocity = ", U_mf)
     return U_mf,Re
+
+def terminal_velocity(C_d,d_catalyst,fluid_density,solid_density):
+    import math
+    U_t = math.sqrt((4*d_catalyst*(solid_density-fluid_density)*fluid_density*9.81)/(3*C_d*fluid_density))
+    return U_t 

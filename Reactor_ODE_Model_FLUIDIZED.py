@@ -4,11 +4,12 @@ import math
 import numpy as np
 from Reactor_Design_Function_File import *
 from matplotlib import pyplot as plt
+from Fluidization_Reactor_Functions import *
 
-class modelparameters:
+class fluidized_modelparameters:
     def __init__(self, d_catalyst , Mass_Toluene_Feed, Mass_Aqueous_Feed, diameter_ratio, Number_tubes, Initial_Voidage, length, Density_Toluene_Feed,Viscosity_Toluene,
                  Mass_Fraction_NA_Aqueous_Feed,Density_Aqueous_Feed,Viscosity_Aq,D_tube_minimum,D_tube,MW_Toluene,MW_NA,Diffusivity_Toluene_in_Water,
-                 Saturated_Toluene_Conc,d_pore,tortuosity_particle,intraparticle_void_fraction,x_A,Sb,Temp):
+                 Saturated_Toluene_Conc,d_pore,tortuosity_particle,intraparticle_void_fraction,x_A,Sb,Temp,U_mf,Bubble_diameter,solid_density):
 
         # =================================#
         # Organic Feed Composition:
@@ -47,6 +48,7 @@ class modelparameters:
         self.Sb = Sb
         self.gas_constant = 8.314  # J/k/mol
         self.Temp = Temp  # K
+        self.solid_density = solid_density
 
         # ---------------------------------#
         # Intial calculations of model
@@ -88,10 +90,14 @@ class modelparameters:
 
         self.C_A0 = initial_conc_overall(self.n_A0, self.v_total_second)
         self.C_B0 = initial_conc_overall(self.n_B0, self.v_total_second)
+        self.U_mf = U_mf
+        self.Bubble_diameter = Bubble_diameter
+        self.U_b = bubble_velocity(self.u_super,self.U_mf,self.D_tube,Bubble_diameter)
+        self.f_b, self.voidage_fluid,self.f_e = get_parameters(self.U_b,self.u_super,self.U_mf,self.Initial_Voidage)
 
 
 
-def create_mdoel(modelparameters):
+def fluidized_create_mdoel(modelparameters):
     model = po.ConcreteModel()
 
     """"defining fixed parameters"""
@@ -106,7 +112,10 @@ def create_mdoel(modelparameters):
     model.intrinsic_rate_constant = po.Param(initialize = modelparameters.frequency_factor * po.exp(- modelparameters.activation_energy/modelparameters.Temp))
     #model.a_s = po.Param(initialize = modelparameters.a_s)
     model.v_frac_aq = po.Param(initialize = modelparameters.v_frac_aq)
-
+    model.voidage_fluid = po.Param(initialize = modelparameters.voidage_fluid)
+    model.f_b = po.Param(initialize = modelparameters.f_b)
+    model.U_b = po.Param(initialize = modelparameters.U_b)
+    model.solid_density = po.Param(initialize = modelparameters.solid_density)
 
     """defining model variables"""
     model.z = pod.ContinuousSet(bounds = (0,modelparameters.length))
@@ -141,19 +150,19 @@ def create_mdoel(modelparameters):
     model.calculate_reaction_rate = po.Constraint(model.z, rule = _calculate_reaction_rate)
 
     def _material_balance_reactants(m,z,i):
-        return m.dC_dz[z,i] == -(1/m.u_super)*(m.reaction_rate[z])*(m.product_selectivity)
+        return m.dC_dz[z,i] == ((1-m.voidage_fluid)*m.solid_density/(m.f_b*m.U_b))*(m.reaction_rate[z])*(m.product_selectivity)
     model.material_balance_nitric = po.Constraint(model.z, model.i , rule = _material_balance_reactants)
 
     def _material_balance_products(m,z):
-        return m.dP_dz[z] == (1/m.u_super)*(m.reaction_rate[z])
+        return m.dP_dz[z] == -((1-m.voidage_fluid)*m.solid_density/(m.f_b*m.U_b))*(m.reaction_rate[z])*(m.product_selectivity)
     model.material_balance_products = po.Constraint(model.z, rule = _material_balance_products)
 
     return model
 
 
-def simulate_model(modelparameters):
+def fluidized_simulate_model(modelparameters):
     """simulating"""
-    model = create_mdoel(modelparameters = modelparameters )
+    model = fluidized_create_mdoel(modelparameters = modelparameters )
     simulator = pod.Simulator(model, package = 'casadi')
     results = simulator.simulate(integrator = 'idas')
     discretizer = po.TransformationFactory("dae.collocation")
@@ -163,7 +172,7 @@ def simulate_model(modelparameters):
     return results, result_list
 
 """simulating and plotting results"""
-def plot_simulation_results(results):
+def fluidized_plot_simulation_results(results):
     resultmatrix = results[1]
     length_index = results[0]
     nitric_conc = resultmatrix[:,0]
