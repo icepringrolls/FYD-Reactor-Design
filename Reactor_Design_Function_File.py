@@ -6,6 +6,7 @@ Created on Thu Feb 11 11:32:46 2021
 @author: henryorlebar
 """
 
+
 def TEST_AQUEOUS_MASS_FLOWRATES(x,Current_Level,LB,UB,number_points): #testing switch for aqueous flowrate
     import numpy as np
     if x==1:
@@ -174,6 +175,7 @@ def Weisz_Platz(effectiveness_factor,Thiele_Modulus):
         print("Negligible Internal diffusion limitations")
     return WP
 
+
 def Pr_Correlation(Cp, viscosity, thermal_conductivity):
     Prandtl = Cp*viscosity/thermal_conductivity
     return Prandtl
@@ -185,3 +187,30 @@ def Nu_Correlation(Re, Pr):
 def hf_Correlatrion(Nu, thermal_conductivity, length):
     hf = Nu * thermal_conductivity / length
     return hf
+
+def Get_Ga(particle_diameter,flow_density, flow_viscosity,Solid_Density):
+    Ga = (9.81*(particle_diameter**3)*(Solid_Density-flow_density)*flow_density)/(flow_viscosity**2)
+    return Ga
+
+def Get_U_mf(Bed_Voidage,Solid_Density,particle_diameter,v_total_hour,v_frac_organic,v_frac_aq,flow_density, flow_viscosity):
+    Ga = Get_Ga(particle_diameter,flow_density, flow_viscosity,Solid_Density) 
+    import math
+    a = 1.75/(Bed_Voidage**3)
+    b = 180*(1-Bed_Voidage)/(Bed_Voidage**3)
+    c = -Ga
+    
+    # calculate the discriminant
+    d = (b**2) - (4*a*c)
+    
+    # find two solutions
+    sol1 = (-b-math.sqrt(d))/(2*a);
+    sol2 = (-b+math.sqrt(d))/(2*a);
+    Re = max(sol1,sol2); print("Reynolds Number across Sphere at Fluidization = ",Re)
+    U_mf = Re*flow_viscosity/(flow_density*particle_diameter); print("Minimum Fludisation Velocity = ", U_mf)
+    return U_mf,Re
+
+def terminal_velocity(C_d,d_catalyst,fluid_density,solid_density):
+    import math
+    U_t = math.sqrt((4*d_catalyst*(solid_density-fluid_density)*fluid_density*9.81)/(3*C_d*fluid_density))
+    return U_t 
+
