@@ -54,17 +54,17 @@ class modelparameters:
         #Reaction properties
         #------------------------------#
         self.selectivity = {
-            "O-MNT" : 0.6525,
-            "P-MNT" : 0.2956,
-            "M-MNT" : 0.0454,
-            "DNT" : 0.0055,
-            "H2O" : 1.0055,
-            "Nitric" : -1.0055,
-            "Toluene" : -1
+            "O-MNT" : -0.6525,
+            "P-MNT" : -0.2956,
+            "M-MNT" : -0.0454,
+            "DNT" : -0.0055,
+            "H2O" : -1.0055,
+            "Nitric" : 1.0055,
+            "Toluene" : 1
         }
         self.frequency_factor = po.exp(62.63)  # M-1s-1
         self.activation_energy = 22830
-        self.reaction_enthalpy = -134.147E3
+        self.reaction_enthalpy = -134147
 
         # ---------------------------------#
         # Intial calculations of model
@@ -129,8 +129,18 @@ def create_mdoel(modelparameters):
     model.u_super = po.Param(initialize = modelparameters.u_super)
     model.D_ea = po.Param(initialize = modelparameters.D_ea)
     model.Cp_Nitric = po.Param(initialize = modelparameters.Cp_Nitric)
+    model.Cp_H2O = po.Param(initialize = 75.399)
+    model.Cp_Toluene = po.Param(initialize = 157)
+    model.Cp_MNT = po.Param(initialize= 202.1)
+    model.Cp_DNT = po.Var(initialize = 255)
     model.v_frac_aq = po.Param(initialize = modelparameters.v_frac_aq)
-    model.Selectivity = po.Param(model.i , initialize = modelparameters.selectivity)
+    model.Selectivity = po.Param(model.i , initialize = {"Nitric" : modelparameters.selectivity["Nitric"],
+                                                         "Toluene": modelparameters.selectivity["Toluene"] ,
+                                                         "O-MNT" : modelparameters.selectivity["O-MNT"],
+                                                        "P-MNT" : modelparameters.selectivity["P-MNT"],
+                                                        "M-MNT" : modelparameters.selectivity["M-MNT"],
+                                                        "DNT" : modelparameters.selectivity["DNT"],
+                                                       "H2O" : modelparameters.selectivity["H2O"]})
     model.reaction_enthalpy = po.Param(initialize = modelparameters.reaction_enthalpy)
     model.a_s = po.Param(initialize = modelparameters.a_s)
     model.hf = po.Param(initialize = modelparameters.hf )
@@ -140,14 +150,14 @@ def create_mdoel(modelparameters):
     model.global_effectiveness_factor = po.Var(model.z)
     model.reaction_rate = po.Var(model.z)
     model.C = po.Var(model.z, model.i)
-    model.T = po.Var(model.z)
-    model.Cp_H2O = po.Var(model.z)
+    """model.Cp_H2O = po.Var(model.z)
     model.Cp_Toluene = po.Var(model.z)
     model.Cp_MNT = po.Var(model.z)
-    model.Cp_DNT = po.Var(model.z)
-    model.cat_temp = po.Var(model.z)
+    model.Cp_DNT = po.Var(model.z)"""
     model.intrinsic_rate_constant = po.Var(model.z)
     model.dC_dz = pod.DerivativeVar(model.C , wrt = model.z)
+    """model.cat_temp = po.Var(model.z)"""
+    model.T = po.Var(model.z)
     model.dT_dz = pod.DerivativeVar(model.T, wrt = model.z)
 
 
@@ -179,7 +189,7 @@ def create_mdoel(modelparameters):
 
     #-----------------------------------------------------#
     #Heat Capacities
-    def _calculate_Cp_H2O(m,z):
+    """def _calculate_Cp_H2O(m,z):
         return m.Cp_H2O[z] == (28.07-0.2817 * m.T[z] + 1.25E-3 * m.T[z]**2 - 2.48E-6 * m.T[z]**3)*(1000*0.018015)  #J/mol.K.
     model.calculate_Cp_H2O = po.Constraint(model.z, rule = _calculate_Cp_H2O)
     #https://syeilendrapramuditya.wordpress.com/2011/08/20/water-thermodynamic-properties/ (Kj/KgK)
@@ -187,20 +197,20 @@ def create_mdoel(modelparameters):
     #GC method for CP estimations of organic liquids, using non-hierarchic method as described in the paper below
     #https: // pubs.acs.org / doi / full / 10.1021 / ie071228z?src = recsys & mobileUi = 0
     def _calculate_Cp_Toluene(m,z):
-        return m.Cp_Toluene[z] == 119.77 - 0.92*m.T[z] + 4.66 * m.T[z]**2    #j/mol.k.
+        return m.Cp_Toluene[z] == 119.77 - 0.92*(m.T[z]/100) + 4.66 * (m.T[z]/100)**2    #j/mol.k.
     model.calculate_Cp_Toluene = po.Constraint(model.z, rule = _calculate_Cp_Toluene)
 
     def _calculate_Cp_MNT(m,z):
-        return m.Cp_MNT[z] == 501.47 - 180.86*m.T[z] + 28.76 * m.T[z]**2      #j/mol.k.
+        return m.Cp_MNT[z] == 501.47 - 180.86*(m.T[z]/100) + 28.76 * (m.T[z]/100)**2      #j/mol.k.
     model.calculate_Cp_MNT = po.Constraint(model.z, rule = _calculate_Cp_MNT)
 
     def _calculate_Cp_DNT(m,z):
-        return m.Cp_DNT[z] == 883.17 - 360.8*m.T[z] + 52.86 * m.T[z]**2                                   #j/mol.k.
-    model.calculate_Cp_DNT = po.Constraint(model.z,  rule = _calculate_Cp_DNT)
+        return m.Cp_DNT[z] == 883.17 - 360.8*(m.T[z]/100) + 52.86 * (m.T[z]/100)**2                                   #j/mol.k.
+    model.calculate_Cp_DNT = po.Constraint(model.z,  rule = _calculate_Cp_DNT)"""
 
-    def _calculate_cat_temp(m,z):
-        return m.hf*m.a_s*(m.T[z]-m.cat_temp[z]) == m.reaction_rate[z] * m.reaction_enthalpy
-    model.calculate_cat_temp = po.Constraint(model.z, rule = _calculate_cat_temp)
+    """def _calculate_cat_temp(m,z):
+        return m.cat_temp[z] == m.T[z] - ((m.reaction_rate[z] * m.reaction_enthalpy)*(1/(m.hf*m.a_s)))
+    model.calculate_cat_temp = po.Constraint(model.z, rule = _calculate_cat_temp)"""
 
     #-----------------------------------------------------#
     #Material Balances
@@ -211,9 +221,8 @@ def create_mdoel(modelparameters):
     #-----------------------------------------------------#
     #Energy Balances
     def _Energy_balance(m,z):
-        cp_avg = m.C[z,"Nitric"] * m.Cp_Nitric + m.C[z,"Toluene"] * m.Cp_Toluene[z] + m.Cp_MNT[z] * \
-                 (m.C[z,"O-MNT"]+m.C[z,"P-MNT"]+m.C[z,"M-MNT"]) + m.C[z,"DNT"] * m.Cp_DNT[z] + m.Cp_H2O[z] * m.C[z,"H2O"]
-        return m.dT_dz[z] == (1/(m.u_super* cp_avg)) * (-m.reaction_rate[z] * m.reaction_enthalpy)
+        cp_avg = m.C[z,"Nitric"] * m.Cp_Nitric + m.C[z,"Toluene"] * m.Cp_Toluene + m.Cp_MNT * (m.C[z,"O-MNT"]+m.C[z,"P-MNT"]+m.C[z,"M-MNT"]) + m.C[z,"DNT"] * m.Cp_DNT + m.Cp_H2O * m.C[z,"H2O"]
+        return m.dT_dz[z] == (1/(m.u_super * cp_avg)) * (-m.reaction_rate[z] * m.reaction_enthalpy)
     model.Energy_balance = po.Constraint(model.z, rule = _Energy_balance)
     return model
 
@@ -227,8 +236,8 @@ def simulate_model(modelparameters):
     discretizer = po.TransformationFactory("dae.collocation")
     discretizer.apply_to(model, nfe = 10, ncp = 3, scheme= "LAGRANGE-RADAU")
     simulator.initialize_model()
-    result_list = [model.C[z,"Nitric"].value for z in model.z]
-    return results, result_list
+    rate = [model.reaction_rate[z].value for z in model.z]
+    return results, rate
 
 
 """simulating and plotting results"""
